@@ -52,7 +52,7 @@ cd ClaudeYapp
 ./gradlew installDebug
 ```
 
-## GitHub Actions CI/CD
+## GitHub Actions CI/CD + Firebase Entegrasyonu
 
 Bu proje, otomatik build ve test süreçleri için GitHub Actions kullanır:
 
@@ -61,9 +61,30 @@ Bu proje, otomatik build ve test süreçleri için GitHub Actions kullanır:
   - Build kontrolü
   - Unit testler
   - APK oluşturma
-  - Build sonucu hakkında PR'a yorum ekleme
+  - **Firebase App Distribution**: APK'yı test kullanıcılarına otomatik dağıtım
+  - **Firebase Test Lab**: Robo testleri ile otomatik UI testleri
+  - Build sonucu hakkında PR'a detaylı yorum ekleme
 
-Build başarılı olduğunda, artifacts bölümünden debug APK indirebilirsiniz.
+### Firebase Kurulumu
+
+Firebase entegrasyonunu kurmak için `FIREBASE_SETUP.md` dosyasına bakın. Gerekli adımlar:
+
+1. Firebase projesi oluşturun
+2. Service account oluşturun ve JSON key indirin
+3. GitHub Secrets ekleyin:
+   - `FIREBASE_APP_ID`
+   - `FIREBASE_SERVICE_ACCOUNT`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_TEST_BUCKET`
+
+Detaylı kurulum rehberi: [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
+
+### CI/CD Pipeline Özellikleri
+
+- **Build Artifacts**: Her build için APK artifacts olarak saklanır (30 gün)
+- **Firebase Distribution**: APK otomatik olarak "testers" grubuna dağıtılır
+- **Automated Testing**: Firebase Test Lab'da Pixel 2 (Android 11) üzerinde robo testler
+- **PR Comments**: Build sonucu, test durumu ve artifact bilgileri otomatik PR yorumları
 
 ## Geliştirme
 
