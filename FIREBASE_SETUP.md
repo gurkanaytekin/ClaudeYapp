@@ -75,32 +75,89 @@ Bu dokümantasyon, Firebase App Distribution ve Firebase Test Lab entegrasyonunu
 4. Region seçin (örn: `us-central1`)
 5. "CREATE" butonuna tıklayın
 
-## Adım 8: GitHub Secrets Oluşturun
+## Adım 8: Firebase App Distribution Authentication Seçimi
+
+Firebase App Distribution için **iki farklı yöntem** vardır:
+
+### Yöntem A: Service Account (Önerilen) ✅
+
+Şu anki GitHub Actions workflow'u bu yöntemi kullanıyor. Service Account JSON yeterlidir.
+
+**Avantajları:**
+- Daha güvenli (role-based access)
+- Otomatik yenileme gerektirmez
+- Production ortamları için önerilir
+
+### Yöntem B: Firebase CLI Token (Alternatif)
+
+Firebase CLI ile login token kullanımı.
+
+**Nasıl Alınır:**
+```bash
+# Firebase CLI yükleyin
+npm install -g firebase-tools
+
+# Login yapın ve token alın
+firebase login:ci
+```
+
+Bu komut size bir token verecek. Bu token'ı `FIREBASE_TOKEN` secret'ı olarak GitHub'a ekleyebilirsiniz.
+
+**Not:** Yöntem B için workflow dosyasında değişiklik gerekir. Mevcut kurulum Yöntem A kullanıyor.
+
+---
+
+## Adım 9: GitHub Secrets Oluşturun
 
 GitHub repository'nizde aşağıdaki secrets'ları oluşturun:
 
 ### Repository Settings > Secrets and variables > Actions > New repository secret
 
-1. **FIREBASE_APP_ID**
+### Zorunlu Secrets:
+
+1. **FIREBASE_APP_ID** (Her iki yöntem için gerekli)
    - Firebase Console > Project Settings > General
    - Android uygulamanızın altındaki "App ID" değeri
    - Format: `1:123456789:android:abcdef123456`
+   - **Nasıl Bulunur:**
+     - Firebase Console > Projeni seç
+     - ⚙️ (Settings) > Project Settings
+     - "Your apps" bölümünde Android uygulamanızı bulun
+     - "App ID" alanını kopyalayın
 
-2. **FIREBASE_SERVICE_ACCOUNT**
+2. **FIREBASE_SERVICE_ACCOUNT** (Yöntem A için - Önerilen)
    - Adım 6'da indirdiğiniz JSON dosyasının **tüm içeriğini** kopyalayın
    - JSON formatında olmalı (başı `{` sonu `}`)
+   - **Format Örneği:**
+     ```json
+     {
+       "type": "service_account",
+       "project_id": "your-project-id",
+       "private_key_id": "...",
+       "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+       "client_email": "...",
+       "client_id": "...",
+       ...
+     }
+     ```
 
-3. **FIREBASE_PROJECT_ID**
+**VEYA**
+
+2b. **FIREBASE_TOKEN** (Yöntem B için - Alternatif)
+   - `firebase login:ci` komutuyla aldığınız token
+   - **Not:** Bu yöntem için workflow dosyasında değişiklik gerekir
+
+3. **FIREBASE_PROJECT_ID** (Test Lab için)
    - Firebase Console > Project Settings > General
    - "Project ID" değeri
    - Örnek: `claudeyapp-12345`
 
-4. **FIREBASE_TEST_BUCKET**
+4. **FIREBASE_TEST_BUCKET** (Test Lab için)
    - Adım 7'de oluşturduğunuz bucket adı
    - Örnek: `claudeyapp-test-results`
    - **NOT:** `gs://` prefix'i OLMADAN sadece bucket adı
 
-## Adım 9: GitHub Secrets Ekleme Adımları
+## Adım 10: GitHub Secrets Ekleme Adımları
 
 1. GitHub repository'nize gidin
 2. **Settings** > **Secrets and variables** > **Actions** seçin
@@ -135,6 +192,13 @@ Tüm adımları tamamladıktan sonra:
 ### Service Account authentication hatası:
 - `FIREBASE_SERVICE_ACCOUNT` secret'ının tam JSON içeriğini içerdiğinden emin olun
 - JSON formatının bozulmadığını kontrol edin
+- Private key içinde `\n` karakterlerinin korunduğundan emin olun
+- JSON'ı kopyalarken başta/sonda boşluk olmamalı
+
+### Token ile ilgili hatalar:
+- Service Account JSON kullanıyorsanız `FIREBASE_TOKEN` gerekmez
+- Her iki token türünü (SERVICE_ACCOUNT ve TOKEN) aynı anda kullanmayın
+- Service Account rollerinin doğru atandığından emin olun
 
 ## Test Türleri
 
