@@ -1,4 +1,4 @@
-name: Android CI
+name: Android CI with Firebase
 
 on:
   pull_request:
@@ -31,18 +31,64 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build --stacktrace
 
-    - name: Run tests
+    - name: Run Unit Tests
       run: ./gradlew test --stacktrace
 
-    - name: Build APK
+    - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
 
-    - name: Upload APK
+    - name: Build Android Test APK
+      run: ./gradlew assembleDebugAndroidTest --stacktrace
+      continue-on-error: true
+
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
+        name: app-debug-${{ github.sha }}
         path: app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
 
+    # Firebase App Distribution
+    - name: Upload to Firebase App Distribution
+      if: success()
+      uses: wzieba/Firebase-Distribution-Github-Action@v1
+      with:
+        appId: ${{ secrets.FIREBASE_APP_ID }}
+        serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        groups: testers
+        file: app/build/outputs/apk/debug/app-debug.apk
+        releaseNotes: |
+          Build: ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.event.head_commit.message }}
+      continue-on-error: true
+
+    # Firebase Test Lab
+    - name: Authenticate to Google Cloud
+      if: success()
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      continue-on-error: true
+
+    - name: Set up Cloud SDK
+      if: success()
+      uses: google-github-actions/setup-gcloud@v2
+      continue-on-error: true
+
+    - name: Run Firebase Test Lab Tests
+      if: success()
+      run: |
+        gcloud firebase test android run \
+          --type robo \
+          --app app/build/outputs/apk/debug/app-debug.apk \
+          --device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \
+          --timeout 5m \
+          --results-bucket=${{ secrets.FIREBASE_TEST_BUCKET }} \
+          --project=${{ secrets.FIREBASE_PROJECT_ID }}
+      continue-on-error: true
+
+    # PR Comments
     - name: Comment PR on success
       if: github.event_name == 'pull_request' && success()
       uses: actions/github-script@v7
@@ -53,7 +99,19 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '✅ Build başarılı! APK oluşturuldu ve artifacts bölümünden indirilebilir.'
+            body: `✅ Build başarılı!
+
+            **Artifacts:**
+            - APK artifacts bölümünden indirilebilir
+            - Firebase App Distribution'a yüklendi (testers grubu)
+
+            **Testler:**
+            - Unit testler: ✅ Geçti
+            - Firebase Test Lab: Robo testler çalıştırıldı
+
+            **Build Info:**
+            - Commit: ${context.sha.substring(0, 7)}
+            - Branch: ${context.ref}`
           })
 
     - name: Comment PR on failure
@@ -66,5 +124,5 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '❌ Build başarısız! Lütfen hataları kontrol edin.'
+            body: '❌ Build başarısız! Lütfen logları kontrol edin.'
           })

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ClaudeYapp</string>
+    <string name="welcome_message">Welcome to ClaudeYapp!</string>
+    <string name="firebase_active">Firebase CI/CD Active</string>
+    <string name="test_lab_ready">Test Lab Ready</string>
 </resources>
