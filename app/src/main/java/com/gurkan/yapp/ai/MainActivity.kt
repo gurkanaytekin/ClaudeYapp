@@ -61,6 +61,12 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            Text(
+                text = "🚀 Firebase CI/CD Active",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
 }
