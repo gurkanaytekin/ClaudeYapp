@@ -79,12 +79,39 @@ Firebase entegrasyonunu kurmak için `FIREBASE_SETUP.md` dosyasına bakın. Gere
 
 Detaylı kurulum rehberi: [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
 
+### Build Strategy (Hybrid Yaklaşım)
+
+Proje, optimal hız ve güvenlik için **hybrid build strategy** kullanır:
+
+| Durum | Build Type | Firebase Group | Test Lab |
+|-------|-----------|----------------|----------|
+| **PR / Feature Branch** | DEBUG APK | `testers` | ✅ Debug |
+| **Main Branch** | DEBUG + RELEASE | `testers` + `production-testers` | ✅ Both |
+| **Git Tag (v\*)** | DEBUG + RELEASE | `testers` + `production-testers` | ✅ Both |
+
+**Avantajları:**
+- ⚡ **Hızlı PR feedback**: Debug build 2-3 dakika
+- 🚀 **Production-ready test**: Main'de release APK test edilir
+- 🔒 **Güvenli**: Release signing sadece main/tag'lerde
+- 📦 **Organize**: Test ve production testers ayrı gruplar
+
 ### CI/CD Pipeline Özellikleri
 
-- **Build Artifacts**: Her build için APK artifacts olarak saklanır (30 gün)
-- **Firebase Distribution**: APK otomatik olarak "testers" grubuna dağıtılır
-- **Automated Testing**: Firebase Test Lab'da Pixel 2 (Android 11) üzerinde robo testler
-- **PR Comments**: Build sonucu, test durumu ve artifact bilgileri otomatik PR yorumları
+- **Build Artifacts**: DEBUG APK (30 gün), RELEASE APK (90 gün - sadece main/tags)
+- **Firebase Distribution**:
+  - DEBUG → `testers` grubu (her build)
+  - RELEASE → `production-testers` grubu (sadece main/tags)
+- **Automated Testing**: Firebase Test Lab (MediumPhone.arm, Android 11)
+- **PR Comments**: Build sonucu, test durumu ve artifact bilgileri otomatik yorumlar
+
+### Release Build & Signing
+
+Release APK şu anda debug keystore ile imzalanıyor (test için yeterli).
+
+**Production için signing key eklemek istiyorsanız:**
+- Detaylı rehber: [RELEASE_SIGNING.md](RELEASE_SIGNING.md)
+- Google Play Store yüklemeleri için gerekli
+- Signing key oluşturma ve GitHub Secrets ekleme adımları
 
 ## Geliştirme
 

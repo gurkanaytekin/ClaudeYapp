@@ -5,6 +5,7 @@ on:
     branches: [ "**" ]
   push:
     branches: [ "**" ]
+    tags: [ "v*" ]
 
 jobs:
   build:
@@ -34,22 +35,38 @@ jobs:
     - name: Run Unit Tests
       run: ./gradlew test --stacktrace
 
+    # Always build DEBUG APK
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
+
+    # Build RELEASE APK only on main branch or tags
+    - name: Build Release APK
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+      run: ./gradlew assembleRelease --stacktrace
 
     - name: Build Android Test APK
       run: ./gradlew assembleDebugAndroidTest --stacktrace
       continue-on-error: true
 
-    - name: Upload APK Artifact
+    # Upload DEBUG APK Artifact
+    - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-${{ github.sha }}
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 30
 
-    # Firebase App Distribution
-    - name: Upload to Firebase App Distribution
+    # Upload RELEASE APK Artifact (only on main/tags)
+    - name: Upload Release APK Artifact
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-${{ github.sha }}
+        path: app/build/outputs/apk/release/app-release.apk
+        retention-days: 90
+
+    # Firebase App Distribution - DEBUG for all builds
+    - name: Upload Debug to Firebase App Distribution
       if: success()
       uses: wzieba/Firebase-Distribution-Github-Action@v1
       with:
@@ -58,12 +75,29 @@ jobs:
         groups: testers
         file: app/build/outputs/apk/debug/app-debug.apk
         releaseNotes: |
+          Build Type: DEBUG
           Build: ${{ github.sha }}
           Branch: ${{ github.ref_name }}
           Commit: ${{ github.event.head_commit.message }}
       continue-on-error: true
 
-    # Firebase Test Lab
+    # Firebase App Distribution - RELEASE (only on main/tags)
+    - name: Upload Release to Firebase App Distribution
+      if: success() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      uses: wzieba/Firebase-Distribution-Github-Action@v1
+      with:
+        appId: ${{ secrets.FIREBASE_APP_ID }}
+        serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        groups: production-testers
+        file: app/build/outputs/apk/release/app-release.apk
+        releaseNotes: |
+          Build Type: RELEASE (Production-ready)
+          Version: ${{ github.ref_name }}
+          Build: ${{ github.sha }}
+          Commit: ${{ github.event.head_commit.message }}
+      continue-on-error: true
+
+    # Firebase Test Lab - Test DEBUG APK
     - name: Authenticate to Google Cloud
       if: success()
       uses: google-github-actions/auth@v2
@@ -76,12 +110,25 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
       continue-on-error: true
 
-    - name: Run Firebase Test Lab Tests
+    - name: Run Firebase Test Lab Tests (Debug)
       if: success()
       run: |
         gcloud firebase test android run \
           --type robo \
           --app app/build/outputs/apk/debug/app-debug.apk \
+          --device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \
+          --timeout 5m \
+          --results-bucket=${{ secrets.FIREBASE_TEST_BUCKET }} \
+          --project=${{ secrets.FIREBASE_PROJECT_ID }}
+      continue-on-error: true
+
+    # Firebase Test Lab - Test RELEASE APK (only on main/tags)
+    - name: Run Firebase Test Lab Tests (Release)
+      if: success() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      run: |
+        gcloud firebase test android run \
+          --type robo \
+          --app app/build/outputs/apk/release/app-release.apk \
           --device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \
           --timeout 5m \
           --results-bucket=${{ secrets.FIREBASE_TEST_BUCKET }} \
@@ -101,8 +148,10 @@ jobs:
             repo: context.repo.repo,
             body: `✅ Build başarılı!
 
+            **Build Type:** DEBUG (PR Build)
+
             **Artifacts:**
-            - APK artifacts bölümünden indirilebilir
+            - DEBUG APK artifacts bölümünden indirilebilir
             - Firebase App Distribution'a yüklendi (testers grubu)
 
             **Testler:**
@@ -111,7 +160,9 @@ jobs:
 
             **Build Info:**
             - Commit: ${context.sha.substring(0, 7)}
-            - Branch: ${context.ref}`
+            - Branch: ${context.ref}
+
+            ℹ️ RELEASE APK sadece main branch'e merge edilince oluşturulacak`
           })
 
     - name: Comment PR on failure
