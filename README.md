@@ -65,6 +65,8 @@ Bu proje, otomatik build ve test süreçleri için GitHub Actions kullanır:
   - **Firebase Test Lab**: Robo testleri ile otomatik UI testleri
   - Build sonucu hakkında PR'a detaylı yorum ekleme
 
+📖 **Detaylı Analiz:** GitHub Actions workflow'unun ne yaptığını adım adım öğrenmek için [GITHUB_ACTIONS_ANALIZI.md](GITHUB_ACTIONS_ANALIZI.md) dosyasına bakın.
+
 ### Firebase Kurulumu
 
 Firebase entegrasyonunu kurmak için `FIREBASE_SETUP.md` dosyasına bakın. Gerekli adımlar:
