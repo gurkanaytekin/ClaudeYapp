@@ -127,7 +127,7 @@ private interface RawApi {
     suspend fun get(@Url url: String): retrofit2.Response<String>
 }
 
-private interface TypedApi {
+@PublishedApi internal interface TypedApi {
     @GET
     suspend fun get(@Url url: String): retrofit2.Response<Any>
 }
