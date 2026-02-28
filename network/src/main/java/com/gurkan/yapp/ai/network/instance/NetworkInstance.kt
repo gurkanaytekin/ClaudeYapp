@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
  */
 object NetworkInstance {
 
-    private var retrofit: Retrofit? = null
+    @PublishedApi internal var retrofit: Retrofit? = null
     private var rawApi: RawApi? = null
 
     /**
@@ -115,7 +115,7 @@ object NetworkInstance {
         return retrofit!!
     }
 
-    private fun checkInitialized() {
+    @PublishedApi internal fun checkInitialized() {
         check(retrofit != null) {
             "NetworkInstance is not initialized. Call NetworkInstance.init(ConfigModel) first."
         }
