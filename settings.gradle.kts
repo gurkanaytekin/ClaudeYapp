@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ClaudeYapp"
 include(":app")
+include(":network")

@@ -52,6 +52,9 @@ android {
 }
 
 dependencies {
+    // Network module
+    implementation(project(":network"))
+
     // Core Android dependencies
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
