@@ -165,7 +165,7 @@ fun ContactScreen() {
                         onClick = {
                             if (name.text.isNotBlank() && email.text.isNotBlank() && message.text.isNotBlank()) {
                                 // Simdi API call olacak buraya
-                                kotlinx.coroutines.launch {
+                                scope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = "✅ Mesajınız alındı! En kısa sürede dönüş yapacağız.",
                                         duration = SnackbarDuration.Short
@@ -176,7 +176,7 @@ fun ContactScreen() {
                                 email = TextFieldValue("")
                                 message = TextFieldValue("")
                             } else {
-                                kotlinx.coroutines.launch {
+                                scope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = "⚠️ Lütfen tüm alanları doldurun",
                                         duration = SnackbarDuration.Short
